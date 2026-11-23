@@ -217,6 +217,14 @@ class AESGCM:
             raise InvalidTag()
         return gctr(self._cipher, inc32(j0), bytes(ciphertext))
 
+    def verify(self, nonce: bytes, ciphertext: bytes, tag: bytes, aad: bytes = b"") -> bool:
+        """Solo comprueba el tag (GHASH + un bloque AES), sin descifrar.
+        Lo usa el dueño al compartir, para confirmar que la clave de sesión es la correcta."""
+        if len(tag) != TAG_SIZE:
+            return False
+        j0 = self._j0(nonce)
+        return constant_time_equal(self._tag(j0, bytes(aad), bytes(ciphertext)), bytes(tag))
+
     def wipe(self) -> None:
         self._cipher.wipe()
 

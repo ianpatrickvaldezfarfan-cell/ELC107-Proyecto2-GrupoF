@@ -8,9 +8,12 @@ También se expone por HTTP en GET /api/admin/compromised-view (solo para la dem
 Entropía de Shannon (bits por byte):
     H(X) = − Σ_{b=0}^{255} p_b · log2(p_b),     p_b = frecuencia relativa del byte b
 Un texto en español ronda 4-5 bits/byte; un buen cifrado se acerca al máximo de
-8 bits/byte (bytes indistinguibles de aleatorios). Con muestras pequeñas el valor
-máximo alcanzable es menor (con n bytes, H ≤ log2(n)), por eso se muestra también
-el máximo posible para esa longitud.
+8 bits/byte (bytes indistinguibles de aleatorios). Con muestras finitas la entropía
+EMPÍRICA de datos perfectamente aleatorios queda algo por debajo de 8; su valor
+esperado es aproximadamente (corrección de Miller-Madow):
+    E[Ĥ] ≈ 8 − (256 − 1) / (2 · n · ln 2)
+Por eso se compara el ciphertext con ese valor esperado y no con 8.
+Del mismo modo, en bytes aleatorios ~95/256 ≈ 37 % caen en el rango ASCII imprimible.
 """
 
 from __future__ import annotations
@@ -32,8 +35,14 @@ def shannon_entropy(data: bytes) -> float:
     return -sum((c / n) * math.log2(c / n) for c in Counter(data).values())
 
 
-def max_entropy_for_length(n: int) -> float:
-    return min(8.0, math.log2(n)) if n > 0 else 0.0
+RANDOM_PRINTABLE_RATIO = 98 / 256  # 95 imprimibles (32..126) + tab, LF, CR
+
+
+def expected_random_entropy(n: int) -> float:
+    """Entropía empírica esperada de n bytes uniformemente aleatorios (aprox. de Miller-Madow)."""
+    if n <= 1:
+        return 0.0
+    return max(0.0, min(math.log2(n), 8.0 - 255 / (2 * n * math.log(2))))
 
 
 def printable_ratio(data: bytes) -> float:
@@ -74,7 +83,7 @@ def compromised_report(storage: Storage, preview_bytes: int = 32) -> dict[str, A
             "ciphertext_len": len(blob),
             "ciphertext_preview_hex": blob[:preview_bytes].hex(),
             "entropy_bits_per_byte": round(shannon_entropy(blob), 4),
-            "max_entropy_for_len": round(max_entropy_for_length(len(blob)), 4),
+            "expected_random_entropy": round(expected_random_entropy(len(blob)), 4),
             "printable_ratio": round(printable_ratio(blob), 4),
             "nonce_hex": rec.nonce.hex(),
             "tag_hex": rec.tag.hex(),
@@ -86,11 +95,14 @@ def compromised_report(storage: Storage, preview_bytes: int = 32) -> dict[str, A
         "users": [{"username": u.username, "fingerprint": u.fingerprint} for u in storage.list_users()],
         "files": files,
         "secret_material_found": _scan_for_secrets(storage),
-        "server_has": ["claves públicas", "ciphertext", "nonce", "tag", "AAD (metadatos en claro)",
+        "server_has": ["claves públicas", "ciphertext", "nonce", "tag",
+                       "AAD (file_id, dueño, fecha, tamaño del ciphertext)",
                        "firmas", "claves de sesión ENVUELTAS con RSA-OAEP", "hashes de tokens"],
         "server_never_has": ["claves privadas", "claves de sesión en claro", "texto claro",
-                             "passphrases", "tokens de sesión en claro"],
-        "known_leak": "La AAD (nombre de archivo, dueño, fecha, tamaño) es visible: está autenticada, no cifrada.",
+                             "nombres reales de archivo", "passphrases", "tokens de sesión en claro"],
+        "known_leak": ("El servidor conoce dueño, destinatarios, fecha y tamaño del ciphertext "
+                       "(necesarios para el control de acceso). El NOMBRE real del archivo y su "
+                       "tamaño original van cifrados dentro del contenido."),
     }
 
 
@@ -104,9 +116,12 @@ def print_report(report: dict[str, Any], out=sys.stdout) -> None:
         w("-" * 78 + "\n")
         w(f"Archivo {f['file_id']}  (dueño: {f['owner']})\n")
         w(f"  Metadatos visibles (AAD): {f['visible_metadata_aad']}\n")
+        w("  Nombre real del archivo: (cifrado dentro del contenido, ilegible para el servidor)\n")
         w(f"  Ciphertext: {f['ciphertext_len']} bytes, inicio: {f['ciphertext_preview_hex']}\n")
         w(f"  Entropía: {f['entropy_bits_per_byte']:.4f} bits/byte "
-          f"(máx. posible {f['max_entropy_for_len']:.4f}); imprimibles: {f['printable_ratio']:.1%}\n")
+          f"(bytes aleatorios de esa longitud: ≈{f['expected_random_entropy']:.4f}; texto en español: ~4-5)\n")
+        w(f"  Bytes imprimibles: {f['printable_ratio']:.1%} (bytes aleatorios: ≈{RANDOM_PRINTABLE_RATIO:.0%}; "
+          "texto: ~100%)\n")
         for k in f["wrapped_keys"]:
             w(f"  Clave envuelta para {k['recipient']} ({k['wrapped_key_len']} B): {k['wrapped_key_hex']}\n")
     w("-" * 78 + "\n")

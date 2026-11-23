@@ -20,6 +20,23 @@ def our_key():
 
 
 @pytest.fixture(scope="session")
+def key_pool():
+    """Claves RSA-2048 pregeneradas (con nuestra implementación) para reutilizar en tests de cliente."""
+    from src.crypto.rsa_core import generate_keypair
+    return [generate_keypair(2048) for _ in range(3)]
+
+
+@pytest.fixture
+def fast_keygen(monkeypatch, key_pool):
+    """Hace que ClientService.keygen use claves pregeneradas (los tests de RSA ya prueban la generación)."""
+    import itertools
+
+    from src.client import service
+    pool = itertools.cycle(key_pool)
+    monkeypatch.setattr(service, "generate_keypair", lambda bits=2048, stats=None, **kw: next(pool))
+
+
+@pytest.fixture(scope="session")
 def their_key():
     """Par RSA-2048 generado por la librería `cryptography`, convertido a nuestras clases."""
     from cryptography.hazmat.primitives.asymmetric import rsa

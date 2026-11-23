@@ -68,8 +68,9 @@ def make_package(owner, owner_key, recipients, plaintext=SECRET_TEXT, filename="
     session_key = secrets.token_bytes(32)
     nonce = secrets.token_bytes(12)
     file_id = secrets.token_hex(16)
-    aad = P.build_aad(file_id, filename, owner, "2026-11-23T12:00:00Z", len(plaintext))
-    ct, tag = aes_gcm_encrypt(session_key, nonce, plaintext, aad)
+    inner = P.pack_plaintext(filename, plaintext)          # nombre real cifrado junto con los datos
+    aad = P.build_aad(file_id, owner, "2026-11-23T12:00:00Z", len(inner))
+    ct, tag = aes_gcm_encrypt(session_key, nonce, inner, aad)
     sig = pss_sign_digest(owner_key, P.file_signature_digest(ct, nonce, tag, aad))
     wrapped = [{"recipient": name, "recipient_fp": fingerprint(k.public_key()),
                 "wrapped_key": P.b64e(oaep_encrypt(k.public_key(), session_key))}
@@ -187,7 +188,7 @@ def test_subir_listar_descargar(three_users, keys):
     k = oaep_decrypt(keys["alice"], P.b64d(pkg["wrapped_key"]))
     assert bytes(k) == session_key
     pt = aes_gcm_decrypt(k, P.b64d(pkg["nonce"]), P.b64d(pkg["ciphertext"]), P.b64d(pkg["tag"]), P.b64d(pkg["aad"]))
-    assert pt == SECRET_TEXT
+    assert P.unpack_plaintext(pt) == ("informe.txt", SECRET_TEXT)
 
 
 def test_validaciones_de_subida(three_users, keys):
@@ -242,11 +243,13 @@ def test_cada_usuario_recibe_solo_su_clave_envuelta(three_users, keys):
 # --------------------------------------------------------------------------- zero-trust
 def test_servidor_comprometido_solo_ve_bytes_cifrados(three_users, keys):
     app, c, tokens = three_users
-    body, session_key = make_package("alice", keys["alice"], {"alice": keys["alice"], "bob": keys["bob"]})
+    body, session_key = make_package("alice", keys["alice"], {"alice": keys["alice"], "bob": keys["bob"]},
+                                     filename="plan_secreto_fusion.docx")
     c.post("/api/files", json=body, headers=auth(tokens["alice"]))
     storage = app.extensions["grupof_storage"]
     everything = storage.db_path.read_bytes() + b"".join(p.read_bytes() for p in storage.blob_dir.iterdir())
     assert b"boveda" not in everything                       # el texto claro no está
+    assert b"plan_secreto" not in everything                 # el nombre real del archivo tampoco
     assert session_key not in everything                     # la clave de sesión no está
     for t in tokens.values():
         assert t.encode() not in everything                  # los tokens no están (solo su hash)
@@ -254,6 +257,8 @@ def test_servidor_comprometido_solo_ve_bytes_cifrados(three_users, keys):
     assert report["secret_material_found"] == []
     f = report["files"][0]
     assert f["entropy_bits_per_byte"] > 7.5 and f["printable_ratio"] < 0.5
+    assert "plan_secreto" not in f["visible_metadata_aad"]
+    assert set(P.parse_aad(f["visible_metadata_aad"].encode())) == {"v", "alg", "file_id", "owner", "timestamp", "size"}
     assert shannon_entropy(SECRET_TEXT) < 5.0                # el texto claro tiene entropía baja
 
 

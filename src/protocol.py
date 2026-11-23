@@ -81,17 +81,24 @@ def login_message(username: str, nonce: bytes) -> bytes:
     return _TAG_LOGIN + _lp(username.encode("utf-8")) + _lp(nonce)
 
 
-def build_aad(file_id: str, filename: str, owner: str, timestamp: str, size: int) -> bytes:
-    """AAD del archivo: metadatos autenticados (NO cifrados) por AES-GCM y cubiertos por la firma."""
+def build_aad(file_id: str, owner: str, timestamp: str, ciphertext_size: int) -> bytes:
+    """AAD del archivo: metadatos autenticados (NO cifrados) por AES-GCM y cubiertos por la firma.
+
+    Contiene SOLO lo que el servidor necesita para el control de acceso. El nombre
+    real del archivo y su tamaño original van CIFRADOS en el encabezado interno
+    (ver pack_plaintext), así que el servidor no los conoce.
+    """
     return canonical_json({
         "v": PROTOCOL_VERSION,
         "alg": "AES-256-GCM",
         "file_id": file_id,
-        "filename": filename,
         "owner": owner,
         "timestamp": timestamp,
-        "size": size,
+        "size": ciphertext_size,
     })
+
+
+_AAD_KEYS = {"v", "alg", "file_id", "owner", "timestamp", "size"}
 
 
 def parse_aad(aad: bytes) -> dict[str, Any]:
@@ -99,16 +106,55 @@ def parse_aad(aad: bytes) -> dict[str, Any]:
         meta = json.loads(aad.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ProtocolError("AAD no es JSON válido") from exc
-    required = {"v", "alg", "file_id", "filename", "owner", "timestamp", "size"}
-    if not isinstance(meta, dict) or not required.issubset(meta):
-        raise ProtocolError("AAD incompleta")
+    if not isinstance(meta, dict) or set(meta) != _AAD_KEYS:
+        raise ProtocolError("AAD incompleta o con campos inesperados")
     if canonical_json(meta) != aad:
         raise ProtocolError("AAD no canónica")
     if meta["v"] != PROTOCOL_VERSION or meta["alg"] != "AES-256-GCM":
         raise ProtocolError("versión/algoritmo de AAD no soportado")
     if not isinstance(meta["file_id"], str) or not FILE_ID_RE.match(meta["file_id"]):
         raise ProtocolError("file_id inválido")
+    if not isinstance(meta["size"], int) or meta["size"] < 0:
+        raise ProtocolError("tamaño inválido en la AAD")
     return meta
+
+
+# ---------------------------------------------------------------------------
+# Encabezado interno (va DENTRO del texto claro, por lo tanto se cifra)
+# ---------------------------------------------------------------------------
+#   texto claro = "GFPT" || 0x01 || LEN_HEADER (4 B) || header_json || datos
+#   header_json = {"filename": <nombre real>, "size": <tamaño original>}
+_PT_MAGIC = b"GFPT\x01"
+_MAX_HEADER = 4096
+MAX_FILENAME_LEN = 255
+
+
+def pack_plaintext(filename: str, data: bytes) -> bytes:
+    """Antepone a los datos el encabezado con el nombre y tamaño reales (se cifrará todo junto)."""
+    if not filename or len(filename) > MAX_FILENAME_LEN:
+        raise ProtocolError("nombre de archivo vacío o demasiado largo")
+    header = canonical_json({"filename": filename, "size": len(data)})
+    return _PT_MAGIC + len(header).to_bytes(4, "big") + header + bytes(data)
+
+
+def unpack_plaintext(plaintext: bytes) -> tuple[str, bytes]:
+    """Separa el encabezado interno y valida que el tamaño declarado coincida."""
+    if plaintext[:5] != _PT_MAGIC or len(plaintext) < 9:
+        raise ProtocolError("encabezado interno ausente o con versión desconocida")
+    hlen = int.from_bytes(plaintext[5:9], "big")
+    if hlen > _MAX_HEADER or 9 + hlen > len(plaintext):
+        raise ProtocolError("encabezado interno con longitud inválida")
+    try:
+        header = json.loads(plaintext[9:9 + hlen].decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ProtocolError("encabezado interno inválido") from exc
+    if not isinstance(header, dict) or not isinstance(header.get("filename"), str) \
+            or not isinstance(header.get("size"), int):
+        raise ProtocolError("encabezado interno incompleto")
+    data = plaintext[9 + hlen:]
+    if header["size"] != len(data):
+        raise ProtocolError("el tamaño original no coincide con los datos")
+    return header["filename"], data
 
 
 def file_signature_digest(ciphertext: bytes, nonce: bytes, tag: bytes, aad: bytes) -> bytes:
