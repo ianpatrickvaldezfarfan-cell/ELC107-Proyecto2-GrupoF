@@ -381,7 +381,10 @@ class Demo:
             "(sin claves privadas, claves de sesión ni texto claro)")
         say(c("Lo que el servidor SÍ conoce (inevitable para el control de acceso): dueño, destinatarios,", "dim"))
         say(c("fechas y tamaño del ciphertext.", "dim"))
-        self.record("f", "servidor comprometido", h_ct > 7.99 and name_hidden and not found)
+        # Criterio: el ciphertext es indistinguible de bytes aleatorios DE SU MISMO TAMAÑO
+        # (no se compara con 8 fijo: la entropía medida depende del tamaño de la muestra).
+        looks_random = h_ct >= exp - 0.02 and h_ct > h_pt + 3
+        self.record("f", "servidor comprometido", looks_random and name_hidden and not found)
 
     def attack_g(self) -> None:
         banner("g", "[extra] Sustitución de la clave pública de bob en el directorio (MITM)")

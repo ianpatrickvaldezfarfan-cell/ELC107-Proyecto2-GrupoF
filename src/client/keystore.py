@@ -196,6 +196,12 @@ class Keystore:
             return None
         return data.get("token")
 
+    def session_expires_at(self, server: str) -> float | None:
+        """Expiración del token vigente para ese servidor, o None."""
+        if self.load_session(server) is None:
+            return None
+        return float(_read_json(self.session_path)["expires_at"])
+
     def clear_session(self) -> None:
         self.session_path.unlink(missing_ok=True)
 

@@ -41,12 +41,16 @@ class TrustError(Exception):
 
 
 class Reporter:
-    """Receptor de mensajes de progreso. La CLI lo reemplaza por uno con colores."""
+    """Receptor de mensajes de progreso. La CLI y la GUI lo reemplazan.
+
+    `trace` recibe el detalle de cada paso criptográfico (lo muestra la GUI en su
+    registro de operaciones; la CLI lo ignora)."""
 
     def step(self, msg: str) -> None: ...
     def info(self, msg: str) -> None: ...
     def ok(self, msg: str) -> None: ...
     def warn(self, msg: str) -> None: ...
+    def trace(self, msg: str) -> None: ...
 
 
 PassphraseProvider = Callable[[str], bytearray]
@@ -116,8 +120,23 @@ class ClientService:
                 self._priv = self.ks.unlock(passphrase)
             finally:
                 zeroize(passphrase)
+            self.r.trace(f"PBKDF2-HMAC-SHA256 (passphrase + sal, {fmt_int(iters)} iteraciones) -> clave AES-256 "
+                         "del keystore; passphrase borrada de la memoria")
+            self.r.trace("Clave privada RSA descifrada con AES-256-GCM (tag del keystore válido)")
             self.r.ok(f"Clave privada desbloqueada ({time.perf_counter() - t0:.1f} s)")
         return self._priv
+
+    def unlock(self) -> None:
+        """Desbloquea la clave privada ahora (la GUI lo hace al abrir el usuario)."""
+        self._unlock()
+
+    @property
+    def is_unlocked(self) -> bool:
+        return self._priv is not None
+
+    def registered_users(self) -> list[str]:
+        """Usuarios del directorio público de claves (no requiere sesión)."""
+        return [u["username"] for u in self.api.list_keys()["users"]]
 
     def close(self) -> None:
         """Suelta la referencia a la clave privada (ver limitación de borrado en keystore.py)."""
@@ -132,7 +151,10 @@ class ClientService:
     def _fetch_key(self, username: str):
         info = self.api.get_key(username)
         pub = public_key_from_pem(info["public_key_pem"])
-        return pub, fingerprint(pub)          # huella calculada LOCALMENTE
+        fp = fingerprint(pub)                  # huella calculada LOCALMENTE
+        self.r.trace(f"Clave pública de {username} obtenida del directorio; huella recalculada localmente: "
+                     f"{format_fingerprint(fp)[:19]}...")
+        return pub, fp
 
     def _trusted_key(self, username: str, *, confirm_new: bool, assume_yes: bool = False) -> E.Recipient:
         pub, fp = self._fetch_key(username)
@@ -140,6 +162,7 @@ class ClientService:
             if fp != self.ks.fingerprint():
                 raise TrustError("¡ALERTA! el servidor devuelve para usted una clave pública distinta de la "
                                  "de su keystore (posible ataque MITM)")
+            self.r.trace("Mi clave pública en el servidor coincide con la de mi keystore")
             return E.Recipient(username, pub, fp)
         pinned = self.ks.pinned_fingerprint(username)
         if pinned is not None:
@@ -147,6 +170,7 @@ class ClientService:
                 raise TrustError(f"¡ALERTA! la clave pública de '{username}' CAMBIÓ respecto de la fijada.\n"
                                  f"  fijada:   {format_fingerprint(pinned)}\n  servidor: {format_fingerprint(fp)}\n"
                                  "Posible ataque man-in-the-middle sobre el directorio de claves. Operación abortada.")
+            self.r.trace(f"La huella de {username} coincide con la fijada en mis contactos")
             return E.Recipient(username, pub, fp)
         if confirm_new:
             question = (f"Huella de la clave pública de '{username}':\n    {format_fingerprint(fp)}\n"
@@ -180,7 +204,10 @@ class ClientService:
             fp = self.ks.create(priv, passphrase, iterations, overwrite=overwrite)
         finally:
             zeroize(passphrase)
+        self.r.trace(f"Sal aleatoria de 128 bits + PBKDF2-HMAC-SHA256 ({fmt_int(iterations)} iteraciones) -> "
+                     "clave AES-256; clave privada cifrada con AES-256-GCM")
         self.r.ok(f"Keystore guardado en {self.ks.dir} ({time.perf_counter() - t0:.1f} s)")
+        self._priv = priv   # queda desbloqueada para el resto de la sesión (p. ej. register)
         return fp
 
     def register(self) -> str:
@@ -189,23 +216,33 @@ class ClientService:
         priv = self._unlock()
         self.r.step("Firmando la prueba de posesión (RSA-PSS)...")
         sig = pss_sign(priv, P.register_message(self.user, fp))
+        self.r.trace(f"Prueba de posesión: firma RSA-PSS de (usuario, huella) = {sig[:8].hex()}...")
         resp = self.api.register(self.user, public_key_to_pem(pub), P.b64e(sig))
         if resp.get("fingerprint") != fp:
             raise TrustError("el servidor registró una huella distinta de la local")
+        self.r.trace(f"Enviado al servidor: SOLO la clave pública (huella {format_fingerprint(fp)[:19]}...)")
         return fp
 
     def login(self) -> float:
         self.r.step("Solicitando challenge al servidor...")
         ch = self.api.challenge(self.user)
         nonce = P.b64d(ch["nonce"])
+        self.r.trace(f"Challenge recibido: nonce de {len(nonce)} bytes {nonce.hex()[:16]}... "
+                     f"(un solo uso, expira en {float(ch['expires_in']):.0f} s)")
         priv = self._unlock()
         self.r.step("Firmando el challenge con RSA-PSS...")
         sig = pss_sign(priv, P.login_message(self.user, nonce))
+        self.r.trace(f"Challenge firmado con RSA-PSS: {sig[:8].hex()}... (no se envía ninguna contraseña)")
         resp = self.api.respond(self.user, P.b64e(nonce), P.b64e(sig))
         expires_at = time.time() + float(resp["expires_in"])
         self.ks.save_session(self.server_url, resp["token"], expires_at)
         self.api.token = resp["token"]
+        self.r.trace("El servidor verificó la firma con mi clave pública; token de sesión guardado en el keystore")
         return expires_at
+
+    def session_expires_at(self) -> float | None:
+        """Hora de expiración del token guardado (None si no hay sesión válida para este servidor)."""
+        return self.ks.session_expires_at(self.server_url)
 
     def upload(self, path: Path, share_with: list[str] | None = None, assume_yes: bool = False) -> str:
         self._require_session()
@@ -221,28 +258,36 @@ class ClientService:
         self.r.step(f"Cifrando {fmt_int(len(data))} bytes con AES-256-GCM, envolviendo la clave de sesión con "
                     f"RSA-OAEP para {', '.join(r.username for r in recipients)} y firmando con RSA-PSS...")
         t0 = time.perf_counter()
-        body = E.seal(self.user, priv, recipients, path.name, data)
+        body = E.seal(self.user, priv, recipients, path.name, data, trace=self.r.trace)
         self.r.ok(f"Paquete cifrado y firmado en {time.perf_counter() - t0:.2f} s")
         self.r.step("Subiendo SOLO datos cifrados al servidor...")
         self.api.upload(body)
+        self.r.trace("Enviado al servidor: solo datos cifrados (ciphertext, nonce, tag, AAD, claves envueltas, "
+                     f"firma). file_id = {body['file_id']}")
         self.ks.remember_file(body["file_id"], path.name)
         return body["file_id"]
 
     def download(self, file_id: str) -> E.OpenedFile:
         self._require_session()
         pkg = self.api.download(file_id)
+        self.r.trace(f"Paquete cifrado recibido del servidor ({len(P.b64d(pkg['ciphertext'])):,} bytes de ciphertext)"
+                     .replace(",", "."))
         owner = self._trusted_key(pkg["owner"], confirm_new=False)
         priv = self._unlock()
         self.r.step("Verificando firma RSA-PSS, desenvolviendo clave (RSA-OAEP) y descifrando (AES-256-GCM)...")
-        opened = E.open_package(pkg, priv, owner.public_key)
+        opened = E.open_package(pkg, priv, owner.public_key, trace=self.r.trace)
         self.ks.remember_file(file_id, opened.filename)
         return opened
 
-    def save(self, opened: E.OpenedFile, out: Path | None = None, force: bool = False) -> Path:
-        """Escribe el archivo SOLO después de verificarlo completo (escritura atómica)."""
+    def save(self, opened: E.OpenedFile, out: Path | None = None, force: bool = False,
+             as_file: bool = False) -> Path:
+        """Escribe el archivo SOLO después de verificarlo completo (escritura atómica).
+        Con as_file=True, `out` es la ruta exacta del archivo (la GUI la obtiene del diálogo Guardar)."""
         name = safe_filename(opened.filename, f"{opened.file_id}.bin")
         if out is None:
             target = Path.cwd() / name
+        elif as_file:
+            target = Path(out)
         else:
             # `out` es carpeta si ya existe como carpeta, si termina en separador o si no tiene extensión
             as_dir = Path(out).is_dir() or str(out).endswith(("/", "\\")) or Path(out).suffix == ""
@@ -266,8 +311,9 @@ class ClientService:
         rec = self._trusted_key(recipient, confirm_new=True, assume_yes=assume_yes)
         priv = self._unlock()
         self.r.step(f"Desenvolviendo la clave de sesión localmente y re-envolviéndola para '{recipient}'...")
-        wrapped = E.rewrap_for(pkg, priv, me.public_key, rec.public_key)
+        wrapped = E.rewrap_for(pkg, priv, me.public_key, rec.public_key, trace=self.r.trace, recipient_name=recipient)
         resp = self.api.share(file_id, recipient, rec.fingerprint, P.b64e(wrapped))
+        self.r.trace(f"Enviado al servidor: solo la clave envuelta para {recipient} (el servidor nunca ve la clave)")
         return resp["recipients"]
 
     def list_files(self) -> list[FileRow]:
@@ -283,12 +329,12 @@ class ClientService:
         self._require_session()
         pkg = self.api.download(file_id)
         owner = self._trusted_key(pkg["owner"], confirm_new=False)
-        meta = E.verify_signature(pkg, owner.public_key)
+        meta = E.verify_signature(pkg, owner.public_key, trace=self.r.trace)
         result = {"file_id": file_id, "owner": pkg["owner"], "owner_fp": owner.fingerprint,
                   "signature": True, "gcm_tag": None, "meta": meta}
         if not signature_only:
             priv = self._unlock()
-            E.check_integrity(pkg, priv, owner.public_key)
+            E.check_integrity(pkg, priv, owner.public_key, trace=self.r.trace)
             result["gcm_tag"] = True
         return result
 
