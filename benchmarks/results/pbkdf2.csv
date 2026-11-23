@@ -1,0 +1,6 @@
+iteraciones,segundos,tipo
+1000,0.251285,medido
+10000,2.465833,medido
+20000,4.992005,medido
+100000,24.915617,estimado
+600000,149.493704,estimado

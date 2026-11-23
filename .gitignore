@@ -23,7 +23,6 @@ keystores/
 # --- Archivos generados por pruebas, demo, manual y benchmarks ---
 demo/_tmp/
 demo/salida/
-benchmarks/results/
 benchmarks/_tmp/
 *.grupof
 *.enc
