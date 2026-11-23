@@ -1,0 +1,4 @@
+# Dependencias de ejecución (ninguna es criptográfica: red, servidor web y gráficos)
+flask>=3.0
+requests>=2.31
+matplotlib>=3.8

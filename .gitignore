@@ -1,0 +1,37 @@
+# --- Entorno de Python ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# --- Datos del servidor (blobs cifrados + SQLite) ---
+server_data/
+*.sqlite
+*.sqlite3
+*.db
+
+# --- Keystores del cliente (claves privadas cifradas, tokens de sesión) ---
+.grupof/
+keystores/
+*.keystore
+*.key
+*.pem
+
+# --- Archivos generados por pruebas, demo y benchmarks ---
+demo/_tmp/
+demo/salida/
+benchmarks/results/
+benchmarks/_tmp/
+*.grupof
+*.enc
+*.dec
+descargas/
+
+# --- Editor / SO ---
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

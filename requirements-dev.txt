@@ -1,0 +1,5 @@
+-r requirements.txt
+# Solo para pruebas: pytest y la librería `cryptography`, que se usa ÚNICAMENTE en tests/
+# para validar cruzadamente las implementaciones propias (nunca se importa en src/).
+pytest>=8.0
+cryptography>=42.0
