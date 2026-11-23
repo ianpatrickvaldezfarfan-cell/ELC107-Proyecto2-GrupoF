@@ -20,7 +20,7 @@ keystores/
 *.key
 *.pem
 
-# --- Archivos generados por pruebas, demo y benchmarks ---
+# --- Archivos generados por pruebas, demo, manual y benchmarks ---
 demo/_tmp/
 demo/salida/
 benchmarks/results/
@@ -28,7 +28,10 @@ benchmarks/_tmp/
 *.grupof
 *.enc
 *.dec
+*.part
 descargas/
+memo.txt
+memo*.txt
 
 # --- Editor / SO ---
 .vscode/

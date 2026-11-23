@@ -1,19 +1,11 @@
 """Utilidades para probar el cliente contra el servidor sin red (test client de Flask)."""
 
 from src.client.api_client import ApiClient
+from src.client.api_client import InProcessTransport as FlaskTransport
 from src.client.keystore import Keystore
 from src.client.service import ClientService
 
 SERVER = "http://test-server"
-
-
-class FlaskTransport:
-    def __init__(self, flask_client):
-        self.c = flask_client
-
-    def request(self, method, path, json, headers):
-        r = self.c.open(path, method=method, json=json, headers=headers)
-        return r.status_code, r.get_json(silent=True)
 
 
 def passphrase_for(user: str) -> bytes:

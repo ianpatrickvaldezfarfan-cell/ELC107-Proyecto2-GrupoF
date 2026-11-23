@@ -9,9 +9,11 @@ Entropía de Shannon (bits por byte):
     H(X) = − Σ_{b=0}^{255} p_b · log2(p_b),     p_b = frecuencia relativa del byte b
 Un texto en español ronda 4-5 bits/byte; un buen cifrado se acerca al máximo de
 8 bits/byte (bytes indistinguibles de aleatorios). Con muestras finitas la entropía
-EMPÍRICA de datos perfectamente aleatorios queda algo por debajo de 8; su valor
-esperado es aproximadamente (corrección de Miller-Madow):
-    E[Ĥ] ≈ 8 − (256 − 1) / (2 · n · ln 2)
+EMPÍRICA de datos perfectamente aleatorios queda por debajo de 8 (con n = 64 bytes
+hay a lo sumo 64 valores distintos, así que Ĥ ≤ log2(64) = 6). Su valor esperado
+EXACTO se obtiene porque el conteo de cada valor de byte sigue una Binomial(n, 1/256):
+    E[Ĥ] = −256 · Σ_{k=1}^{n} P(K = k) · (k/n) · log2(k/n),   K ~ Bin(n, 1/256)
+(para n grande coincide con la aproximación de Miller-Madow 8 − 255 / (2 n ln 2)).
 Por eso se compara el ciphertext con ese valor esperado y no con 8.
 Del mismo modo, en bytes aleatorios ~95/256 ≈ 37 % caen en el rango ASCII imprimible.
 """
@@ -22,6 +24,7 @@ import argparse
 import math
 import sys
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -38,11 +41,22 @@ def shannon_entropy(data: bytes) -> float:
 RANDOM_PRINTABLE_RATIO = 98 / 256  # 95 imprimibles (32..126) + tab, LF, CR
 
 
+@lru_cache(maxsize=256)
 def expected_random_entropy(n: int) -> float:
-    """Entropía empírica esperada de n bytes uniformemente aleatorios (aprox. de Miller-Madow)."""
+    """Entropía empírica esperada (exacta) de n bytes uniformemente aleatorios."""
     if n <= 1:
         return 0.0
-    return max(0.0, min(math.log2(n), 8.0 - 255 / (2 * n * math.log(2))))
+    p = 1 / 256
+    mean, sd = n * p, math.sqrt(n * p * (1 - p))
+    k_max = min(n, int(mean + 12 * sd + 20))          # la cola más allá es despreciable
+    log_p, log_q = math.log(p), math.log1p(-p)
+    lg_n1 = math.lgamma(n + 1)
+    total = 0.0
+    for k in range(1, k_max + 1):
+        log_prob = lg_n1 - math.lgamma(k + 1) - math.lgamma(n - k + 1) + k * log_p + (n - k) * log_q
+        x = k / n
+        total += math.exp(log_prob) * x * math.log2(x)
+    return -256 * total
 
 
 def printable_ratio(data: bytes) -> float:

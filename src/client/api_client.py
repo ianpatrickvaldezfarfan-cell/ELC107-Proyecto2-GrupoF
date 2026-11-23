@@ -42,6 +42,18 @@ class RequestsTransport:
         return r.status_code, body
 
 
+class InProcessTransport:
+    """Transporte sobre el test client de Flask (servidor en el mismo proceso, sin red).
+    Lo usan los tests y la demo de ataques en su modo por defecto."""
+
+    def __init__(self, flask_test_client) -> None:
+        self.c = flask_test_client
+
+    def request(self, method, path, json, headers):
+        r = self.c.open(path, method=method, json=json, headers=headers)
+        return r.status_code, r.get_json(silent=True)
+
+
 class ApiClient:
     def __init__(self, transport: Transport, token: str | None = None) -> None:
         self.transport = transport
