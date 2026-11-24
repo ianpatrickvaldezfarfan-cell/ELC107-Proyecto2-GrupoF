@@ -74,6 +74,15 @@ LOG_STYLES = {  # tipo -> (prefijo, color)
 }
 
 
+def keep_original_extension(target: Path, original_name: str) -> Path:
+    """Si el usuario cambió el nombre en el diálogo Guardar y quitó la extensión,
+    se conserva la extensión original del archivo ('informe' -> 'informe.pdf')."""
+    original_ext = Path(original_name).suffix
+    if original_ext and not target.suffix:
+        return target.with_name(target.name + original_ext)
+    return target
+
+
 def list_local_users(home: Path) -> list[str]:
     if not home.exists():
         return []
@@ -824,7 +833,8 @@ class App:
         if not target:
             self.log.append("info", "Guardado cancelado (los datos descifrados se descartan)")
             return
-        path = self.svc.save(opened, Path(target), force=True, as_file=True)
+        target_path = keep_original_extension(Path(target), opened.filename)
+        path = self.svc.save(opened, target_path, force=True, as_file=True)
         self.log.append("ok", f"'{opened.filename}' verificado y guardado en {path}")
         self.refresh_files()
 

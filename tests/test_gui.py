@@ -197,6 +197,36 @@ def test_bridge_call_desde_hilo(tk_root):
     assert box["r"] == threading.main_thread().name   # el diálogo se ejecutó en el hilo de Tk
 
 
+def test_verificar_registra_cada_paso_una_sola_vez(tk_root, setup, monkeypatch):
+    server, client, home, record, tmp = setup
+    alice = make_app(tk_root, client, home, "alice", monkeypatch)
+    src = tmp / "v.txt"
+    src.write_text("verificar", encoding="utf-8")
+    alice.run_task("subir", lambda: alice.svc.upload(src), on_done=alice._uploaded)
+    wait_idle(tk_root, alice)
+    wait_idle(tk_root, alice)
+    alice.log.clear()
+    alice.tree.selection_set(alice.tree.get_children()[0])
+    alice.act_verify()
+    wait_idle(tk_root, alice)
+    text = log_text(alice)
+    assert text.count("Firma RSA-PSS VÁLIDA") == 1
+    assert text.count("Huella del firmante") == 1
+    assert text.count("AAD coherente") == 1
+    assert text.count("Tag AES-GCM VÁLIDO") == 1
+    assert record["info"] and "Verificación correcta" in record["info"][0][0]
+
+
+@pytest.mark.parametrize("target,original,expected", [
+    ("C:/x/informe", "presupuesto.pdf", "C:/x/informe.pdf"),        # quitó la extensión: se conserva
+    ("C:/x/informe.txt", "presupuesto.pdf", "C:/x/informe.txt"),    # eligió otra: se respeta
+    ("C:/x/notas", "LEEME", "C:/x/notas"),                          # el original no tenía extensión
+    ("C:/x/copia.v2", "datos.tar.gz", "C:/x/copia.v2"),
+])
+def test_conserva_extension_original(target, original, expected):
+    assert gui.keep_original_extension(Path(target), original) == Path(expected)
+
+
 def test_usuarios_locales(tmp_path):
     (tmp_path / "alice").mkdir()
     (tmp_path / "alice" / "private_key.enc.json").write_text("{}")

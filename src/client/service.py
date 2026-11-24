@@ -329,14 +329,14 @@ class ClientService:
         self._require_session()
         pkg = self.api.download(file_id)
         owner = self._trusted_key(pkg["owner"], confirm_new=False)
-        meta = E.verify_signature(pkg, owner.public_key, trace=self.r.trace)
-        result = {"file_id": file_id, "owner": pkg["owner"], "owner_fp": owner.fingerprint,
-                  "signature": True, "gcm_tag": None, "meta": meta}
-        if not signature_only:
+        if signature_only:
+            meta = E.verify_signature(pkg, owner.public_key, trace=self.r.trace)
+        else:
+            # check_integrity ya incluye la verificación de firma y AAD: se hace UNA sola vez
             priv = self._unlock()
-            E.check_integrity(pkg, priv, owner.public_key, trace=self.r.trace)
-            result["gcm_tag"] = True
-        return result
+            meta = E.check_integrity(pkg, priv, owner.public_key, trace=self.r.trace)
+        return {"file_id": file_id, "owner": pkg["owner"], "owner_fp": owner.fingerprint,
+                "signature": True, "gcm_tag": None if signature_only else True, "meta": meta}
 
     def fingerprint_info(self, username: str | None = None) -> dict[str, Any]:
         if username is None or username == self.user:
