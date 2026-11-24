@@ -1,0 +1,106 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="secuencia-de-compartir" name="Secuencia de compartir">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1230" pageHeight="914" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c22" value="" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1060.0" y="86" as="sourcePoint" />
+            <mxPoint x="1060.0" y="874" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c21" value="" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="760.0" y="86" as="sourcePoint" />
+            <mxPoint x="760.0" y="874" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c20" value="" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460.0" y="86" as="sourcePoint" />
+            <mxPoint x="460.0" y="874" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c19" value="" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="160.0" y="86" as="sourcePoint" />
+            <mxPoint x="160.0" y="874" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c3" value="alice (dueña)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60.0" y="30" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="Cliente de alice" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360.0" y="30" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="Servidor&lt;br&gt;(no confiable)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="660.0" y="30" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="bob" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960.0" y="30" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="share &amp;lt;file_id&amp;gt; --with bob" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="160.0" y="126" as="sourcePoint" />
+            <mxPoint x="460.0" y="126" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c8" value="GET /api/files/&amp;lt;file_id&amp;gt;" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460.0" y="172" as="sourcePoint" />
+            <mxPoint x="760.0" y="172" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c9" value="paquete con W_alice" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="760.0" y="218" as="sourcePoint" />
+            <mxPoint x="460.0" y="218" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c10" value="GET /api/keys/bob" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460.0" y="264" as="sourcePoint" />
+            <mxPoint x="760.0" y="264" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c11" value="clave pública de bob" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="760.0" y="310" as="sourcePoint" />
+            <mxPoint x="460.0" y="310" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c12" value="Primera vez: mostrar la huella de bob y confirmar&lt;br&gt;que se verificó fuera de banda; luego se fija.&lt;br&gt;Si difiere de la fijada: ALERTA MITM." style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="283.3" y="356" width="353.4" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="1. Verificar σ del propio archivo&lt;br&gt;2. K_s = RSA-OAEP-Dec(priv_alice, W_alice)&lt;br&gt;3. Comprobar el tag GCM con K_s (clave correcta)&lt;br&gt;4. W_bob = RSA-OAEP(pub_bob, K_s)&lt;br&gt;5. Borrar K_s" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="286.6" y="445" width="346.79999999999995" height="99" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="POST /api/files/&amp;lt;file_id&amp;gt;/share {bob, huella, W_bob}" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460.0" y="582" as="sourcePoint" />
+            <mxPoint x="760.0" y="582" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c15" value="Solo el dueño puede compartir; la huella debe&lt;br&gt;coincidir con la registrada. Guarda W_bob.&lt;br&gt;El servidor NUNCA ve K_s." style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="596.5" y="628" width="327.0" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="destinatarios: [alice, bob]" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="760.0" y="717" as="sourcePoint" />
+            <mxPoint x="460.0" y="717" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c17" value="compartido" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460.0" y="763" as="sourcePoint" />
+            <mxPoint x="160.0" y="763" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c18" value="bob ya puede descargar el archivo (ver secuencia de descarga)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="630.0" y="809" width="560.0" height="31" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

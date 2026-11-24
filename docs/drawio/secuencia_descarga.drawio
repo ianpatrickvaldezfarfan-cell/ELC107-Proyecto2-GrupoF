@@ -1,0 +1,94 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="secuencia-de-descarga" name="Secuencia de descarga">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1050" pageHeight="881" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c20" value="" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="880.0" y="86" as="sourcePoint" />
+            <mxPoint x="880.0" y="841" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c19" value="" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520.0" y="86" as="sourcePoint" />
+            <mxPoint x="520.0" y="841" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c18" value="" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="160.0" y="86" as="sourcePoint" />
+            <mxPoint x="160.0" y="841" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c3" value="bob (usuario)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60.0" y="30" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="Cliente de bob&lt;br&gt;(CLI / GUI)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="420.0" y="30" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="Servidor&lt;br&gt;(no confiable)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="780.0" y="30" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="download &amp;lt;file_id&amp;gt;" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="160.0" y="126" as="sourcePoint" />
+            <mxPoint x="520.0" y="126" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c7" value="GET /api/files/&amp;lt;file_id&amp;gt; (Bearer token)" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520.0" y="172" as="sourcePoint" />
+            <mxPoint x="880.0" y="172" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c8" value="¿bob tiene una clave envuelta para este archivo?&lt;br&gt;No -&amp;gt; 404 (no revela si el archivo existe)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="663.2" y="218" width="346.79999999999995" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="{C, nonce, T, AAD, σ, huella del firmante, W_bob}&lt;br&gt;(solo la clave envuelta de bob)" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="880.0" y="304" as="sourcePoint" />
+            <mxPoint x="520.0" y="304" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c10" value="GET /api/keys/alice" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;endArrow=block;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520.0" y="350" as="sourcePoint" />
+            <mxPoint x="880.0" y="350" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c11" value="clave pública de alice" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="880.0" y="396" as="sourcePoint" />
+            <mxPoint x="520.0" y="396" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c12" value="Huella de alice recalculada y comparada con la fijada&lt;br&gt;(si cambió: ALERTA MITM y se aborta)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="330.1" y="442" width="379.79999999999995" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="1. Verificar σ con RSA-PSS (clave pública de alice)&lt;br&gt;2. Validar AAD (dueño, file_id, tamaño)&lt;br&gt;3. K_s = RSA-OAEP-Dec(priv_bob, W_bob)&lt;br&gt;4. AES-256-GCM: verificar T y descifrar&lt;br&gt;5. Separar nombre real y datos; borrar K_s" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="336.70000000000005" y="514" width="366.59999999999997" height="99" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="&lt;b&gt;Si CUALQUIER verificación falla&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;align=left;spacingLeft=10;opacity=70;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="637" width="980" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="c15" value="FALLO DE SEGURIDAD: no se entrega ningún dato" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520.0" y="681" as="sourcePoint" />
+            <mxPoint x="160.0" y="681" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c16" value="&lt;b&gt;Si todo es válido&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=6;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;align=left;spacingLeft=10;opacity=70;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="727" width="980" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="c17" value="archivo guardado con su nombre real (escritura atómica)" style="html=1;fontSize=11;verticalAlign=bottom;labelBackgroundColor=none;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520.0" y="785" as="sourcePoint" />
+            <mxPoint x="160.0" y="785" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
