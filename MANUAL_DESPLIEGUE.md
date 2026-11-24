@@ -46,7 +46,7 @@ Dependencias (ninguna criptográfica en tiempo de ejecución):
 ### 2.1 Obtener el proyecto
 
 ```powershell
-git clone <URL-del-repositorio> ELC107-Proyecto2-GrupoF
+git clone https://github.com/ianpatrickvaldezfarfan-cell/ELC107-Proyecto2-GrupoF.git ELC107-Proyecto2-GrupoF
 cd ELC107-Proyecto2-GrupoF
 ```
 

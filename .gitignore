@@ -32,6 +32,9 @@ descargas/
 memo.txt
 memo*.txt
 
+# --- Configuración local de herramientas del editor ---
+.claude/
+
 # --- Editor / SO ---
 .vscode/
 .idea/

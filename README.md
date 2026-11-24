@@ -133,7 +133,7 @@ python -m src.server.compromised_view --data-dir server_data
 Requisitos: Windows 10/11, Python 3.11 o superior (probado con 3.14) y Git.
 
 ```powershell
-git clone <URL-del-repositorio> ELC107-Proyecto2-GrupoF
+git clone https://github.com/ianpatrickvaldezfarfan-cell/ELC107-Proyecto2-GrupoF.git ELC107-Proyecto2-GrupoF
 cd ELC107-Proyecto2-GrupoF
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -280,14 +280,15 @@ ELC107-Proyecto2-GrupoF/
 
 ## Integrantes
 
-| Nombre completo | Registro | Rol / aporte principal |
-|---|---|---|
-| [Nombre Apellido 1] | [Registro 1] | [Rol 1] |
-| [Nombre Apellido 2] | [Registro 2] | [Rol 2] |
-| [Nombre Apellido 3] | [Registro 3] | [Rol 3] |
-| [Nombre Apellido 4] | [Registro 4] | [Rol 4] |
+| Nombre completo | Registro |
+|---|---|
+| Avendaño Tapia Nohelia Nicole | [Registro] |
+| Maciel Rojas Maria Fernanda | [Registro] |
+| Montoya Castro Alison | [Registro] |
+| Valdez Farfan Ian Patrick | 221046127 |
+| Vargas Osinaga Richard Junior | [Registro] |
 
-Docente: [Nombre del docente] - Gestión: [Semestre/Año]
+**Docente:** Perez Delgadillo Shirley Eulalia - **Gestión:** 2/2026
 
 ## Referencias
 
